@@ -1,9 +1,16 @@
 use crate::Solution;
-use anyhow::Result;
 
-pub fn solve(input: &str) -> Result<Solution<u32, u32>> {
-    let vec: Result<Vec<u32>, _> = input.lines().map(|x| x.parse()).collect();
-    let vec = vec?;
+pub fn solve(input: &[u8]) -> Solution<u32, u32> {
+    let mut vec: Vec<u32> = Vec::with_capacity(2000);
+    let mut num = 0;
+    for byte in input.iter().copied() {
+        if byte == b'\n' {
+            vec.push(num);
+            num = 0;
+        } else {
+            num = num * 10 + (byte & 0x0f) as u32;
+        }
+    }
     let mut count1 = 0;
     for window in vec.windows(2) {
         if window[0] < window[1] {
@@ -24,5 +31,5 @@ pub fn solve(input: &str) -> Result<Solution<u32, u32>> {
             count2 += 1;
         }
     }
-    Ok(Solution::new(count1, count2))
+    Solution::new(count1, count2)
 }

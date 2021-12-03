@@ -1,5 +1,4 @@
 use super::*;
-use anyhow::anyhow;
 
 #[derive(Debug)]
 struct Position {
@@ -8,31 +7,33 @@ struct Position {
     aim: u32,
 }
 
-pub fn solve(input: &str) -> Result<Solution<u32, u32>> {
+pub fn solve(input: &[u8]) -> Solution<u32, u32> {
     let mut pos = Position {
         depth: 0,
         horizontal: 0,
         aim: 0,
     };
-    for line in input.lines() {
-        // Each line has at most one digit
-        let num = line
-            .chars()
-            .rev()
-            .next()
-            .and_then(|c| c.to_digit(10))
-            .ok_or_else(|| anyhow!("Expected to parse a digit"))?;
-        if line.starts_with("down") {
-            pos.aim += num;
-        } else if line.starts_with("up") {
-            pos.aim -= num;
-        } else {
-            pos.horizontal += num;
-            pos.depth += pos.aim * num;
+    let mut i = 0;
+    while i < input.len() {
+        match input[i] {
+            b'd' => {
+                i += 7;
+                let num = (input[i - 2] - b'0') as u32;
+                pos.aim += num;
+            }
+            b'u' => {
+                i += 5;
+                let num = (input[i - 2] - b'0') as u32;
+                pos.aim -= num;
+            }
+            _ => {
+                debug_assert_eq!(b'f', input[i]);
+                i += 10;
+                let num = (input[i - 2] - b'0') as u32;
+                pos.horizontal += num;
+                pos.depth += pos.aim * num;
+            }
         }
     }
-    Ok(Solution::new(
-        pos.aim * pos.horizontal,
-        pos.depth * pos.horizontal,
-    ))
+    Solution::new(pos.aim * pos.horizontal, pos.depth * pos.horizontal)
 }

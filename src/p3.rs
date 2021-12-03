@@ -7,14 +7,15 @@ enum MostCommon {
     Tie,
 }
 
-pub fn solve(input: &str) -> Result<Solution<u32, u32>> {
+pub fn solve(input: &[u8]) -> Result<Solution<u32, u32>> {
     const NUM_BITS: usize = 12;
+    const LINE_LEN: usize = NUM_BITS + 1;
     const CHECK: u32 = 1 << (NUM_BITS - 1);
     let mut set_bit_count: [u32; NUM_BITS] = [0; NUM_BITS];
     let mut ones = Vec::with_capacity(1200);
     let mut zeros = Vec::with_capacity(1200);
-    for line in input.lines() {
-        let mut num = u32::from_str_radix(line, 2)?;
+    for offset in 0..input.len() / LINE_LEN {
+        let mut num = fast_parse(&input[LINE_LEN * offset..LINE_LEN * offset + NUM_BITS]);
         // Perform the first split for part 2 to avoid extra vector allocations
         if num >= CHECK {
             ones.push(num);
@@ -68,6 +69,15 @@ pub fn solve(input: &str) -> Result<Solution<u32, u32>> {
     ensure![oxy.len() == 1, "Oxygen reading did not converge properly"];
     ensure![co2.len() == 1, "Co2 reading did not converge properly"];
     Ok(Solution::new(gamma * epsilon, oxy[0] * co2[0]))
+}
+
+fn fast_parse(slice: &[u8]) -> u32 {
+    let mut num = 0;
+    for i in 0..12 {
+        num = num << 1;
+        num |= (slice[i] & 1) as u32;
+    }
+    num
 }
 
 fn most_common_outcome(slice: &[u32], test: u32) -> MostCommon {
