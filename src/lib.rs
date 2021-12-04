@@ -8,7 +8,7 @@ use std::fmt::Display;
 pub static DAY1: &[u8] = include_bytes!("../input/day1");
 pub static DAY2: &[u8] = include_bytes!("../input/day2");
 pub static DAY3: &[u8] = include_bytes!("../input/day3");
-pub static DAY4: &'static str = include_str!("../input/day4");
+pub static DAY4: &[u8] = include_bytes!("../input/day4");
 
 #[derive(Debug)]
 pub struct Solution<A, B> {
