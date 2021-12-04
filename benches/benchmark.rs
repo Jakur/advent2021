@@ -2,8 +2,7 @@ use advent2021::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {
-    static s: &[u8] = include_bytes!("../input/day1");
-    c.bench_function("p1", |b| b.iter(|| p1::solve(black_box(&s))));
+    c.bench_function("p4", |b| b.iter(|| p4::solve(black_box(&DAY4))));
 }
 
 fn just_parse(input: &str) -> u32 {
