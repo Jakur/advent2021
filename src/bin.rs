@@ -1,5 +1,5 @@
 use advent2021::*;
 
 fn main() {
-    dbg!(p5::solve(&DAY5));
+    dbg!(p6::solve(&DAY6));
 }
