@@ -1,33 +1,32 @@
 use super::*;
 
-pub fn solve(input: &str) -> Result<Solution<u64, u64>> {
-    let mut fish_count: Vec<u64> = vec![0; 9];
-    for x in input.trim().split(",") {
-        let val = x.parse::<usize>()?;
-        fish_count[val] += 1;
+pub fn solve(input: &[u8]) -> Result<Solution<u64, u64>> {
+    let mut fish_count: [u64; 9] = [0; 9];
+    let mut idx = 0;
+    while idx < input.len() {
+        let num = input[idx] - b'0';
+        fish_count[num as usize] += 1;
+        idx += 2;
     }
-    dbg!(&fish_count);
     for _ in 0..80 {
-        fish_count = update_step(fish_count);
+        update_step(&mut fish_count);
     }
     let part1 = fish_count.iter().copied().sum();
     for _ in 0..256 - 80 {
-        fish_count = update_step(fish_count);
+        update_step(&mut fish_count);
     }
     let part2 = fish_count.iter().copied().sum();
     Ok(Solution::new(part1, part2))
 }
 
-fn update_step(fish_count: Vec<u64>) -> Vec<u64> {
-    let mut update = fish_count.clone();
-    for (idx, val) in fish_count.into_iter().enumerate() {
-        if idx == 0 {
-            update[6] += val;
-            update[8] += val;
-        } else {
-            update[idx - 1] += val;
-        }
-        update[idx] -= val;
+fn update_step(fish_count: &mut [u64; 9]) {
+    let zero = fish_count[0];
+    for idx in 1..9 {
+        let val = fish_count[idx];
+        fish_count[idx - 1] += val;
+        fish_count[idx] -= val;
     }
-    update
+    fish_count[0] -= zero;
+    fish_count[6] += zero;
+    fish_count[8] += zero;
 }
