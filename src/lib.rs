@@ -6,6 +6,7 @@ pub mod p5;
 pub mod p6;
 pub mod p7;
 pub mod p8;
+pub mod p9;
 use anyhow::Result;
 use std::fmt::Display;
 
@@ -17,6 +18,7 @@ pub static DAY5: &'static str = include_str!("../input/day5");
 pub static DAY6: &[u8] = include_bytes!("../input/day6");
 pub static DAY7: &'static str = include_str!("../input/day7");
 pub static DAY8: &'static str = include_str!("../input/day8");
+pub static DAY9: &[u8] = include_bytes!("../input/day9");
 
 #[derive(Debug)]
 pub struct Solution<A, B> {
