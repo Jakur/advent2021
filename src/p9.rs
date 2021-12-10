@@ -1,5 +1,4 @@
 use super::*;
-use std::collections::HashSet;
 
 const ROWS: usize = 100;
 const COLS: usize = 100;
@@ -84,22 +83,18 @@ impl Grid {
     }
 }
 
-fn flood_fill(
-    grid: &mut Grid,
-    row: usize,
-    col: usize,
-    discovered: &mut HashSet<(usize, usize)>,
-) -> usize {
+fn flood_fill(grid: &Grid, row: usize, col: usize, discovered: &mut Grid) -> usize {
     let mut size = 0;
-    let mut queue = vec![grid.index((row, col)).unwrap()];
-    while let Some(x) = queue.pop() {
+    let mut stack = vec![grid.index((row, col)).unwrap()];
+    while let Some(x) = stack.pop() {
         size += 1;
         for neighbor in grid.neighbors(x.row, x.col).filter(|x| x.val != 9) {
-            if discovered.contains(&(neighbor.row, neighbor.col)) {
+            let val = &mut discovered.data[neighbor.row * COLS + neighbor.col];
+            if *val != 0 {
                 continue;
             }
-            discovered.insert((neighbor.row, neighbor.col));
-            queue.push(neighbor);
+            *val += 1;
+            stack.push(neighbor);
         }
     }
     size
@@ -120,7 +115,7 @@ pub fn solve(input: &[u8]) -> Solution<u32, usize> {
         }
     }
     let mut part1 = 0;
-    let mut discovered = HashSet::with_capacity(10_000);
+    let mut discovered = Grid::new();
     let mut counts = Vec::new();
     for row in 0..ROWS {
         for col in 0..COLS {
@@ -128,9 +123,10 @@ pub fn solve(input: &[u8]) -> Solution<u32, usize> {
                 continue; // Cannot satisfy part 1 or 2
             }
             // Flood fill
-            if !discovered.contains(&(row, col)) {
-                discovered.insert((row, col));
-                counts.push(flood_fill(&mut grid, row, col, &mut discovered));
+            let check = &mut discovered.data[row * COLS + col];
+            if *check == 0 {
+                *check += 1;
+                counts.push(flood_fill(&grid, row, col, &mut discovered));
             }
             if grid.low_point(row, col) {
                 part1 += (grid.data[row * COLS + col] + 1) as u32;
