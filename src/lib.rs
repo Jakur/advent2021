@@ -6,6 +6,7 @@ pub mod p13;
 pub mod p14;
 pub mod p15;
 pub mod p16;
+pub mod p17;
 pub mod p2;
 pub mod p3;
 pub mod p4;
@@ -33,6 +34,7 @@ pub static DAY13: &'static str = include_str!("../input/day13");
 pub static DAY14: &'static str = include_str!("../input/day14");
 pub static DAY15: &[u8] = include_bytes!("../input/day15");
 pub static DAY16: &[u8] = include_bytes!("../input/day16");
+pub static DAY17: &'static str = include_str!("../input/day17");
 
 #[derive(Debug)]
 pub struct Solution<A, B> {
