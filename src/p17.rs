@@ -1,5 +1,5 @@
 use super::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 enum StepsX {
     Never,
@@ -56,17 +56,12 @@ impl Target {
             max_y,
         }
     }
-    fn check_point(&self, x: i32, y: i32) -> bool {
-        self.min_x <= x && x <= self.max_x && self.min_y <= y && y <= self.max_y
-    }
     fn check_x(&self, x: i32) -> bool {
         self.min_x <= x && x <= self.max_x
     }
     fn check_y(&self, y: i32) -> bool {
         self.min_y <= y && y <= self.max_y
     }
-    /// Checks the minimum and maximum steps where the path will fall within
-    /// the target. If the path never falls within the target, return None
     fn check_x_path(&self, mut velocity_x: i32) -> StepsX {
         let mut x = 0;
         let mut step_count = 0;
@@ -100,7 +95,6 @@ impl Target {
     fn check_y_path(&self, mut velocity_y: i32) -> StepsY {
         let mut y = 0;
         let mut ret = StepsY::new();
-        let mut hit = false;
         let mut steps = 0;
         while y >= self.min_y {
             if velocity_y == 0 {
@@ -112,81 +106,90 @@ impl Target {
             if self.check_y(y) {
                 ret.update(steps);
             }
-            // hit = hit || self.check_y(y);
         }
-        // hit = hit || self.check_y(y);
         ret
     }
 }
 
 struct StepsMap {
-    single_counts: HashMap<usize, usize>,
-    geq: Vec<usize>,
+    single_counts: HashMap<usize, Vec<i32>>,
+    geq: Vec<(usize, i32)>,
 }
 
 impl StepsMap {
-    fn new(single_counts: HashMap<usize, usize>, geq: Vec<usize>) -> Self {
+    fn new(single_counts: HashMap<usize, Vec<i32>>, geq: Vec<(usize, i32)>) -> Self {
         Self { single_counts, geq }
     }
-    fn get(&self, steps: usize) -> usize {
-        let single = self.single_counts.get(&steps).copied().unwrap_or_default();
-        self.geq.iter().filter(|&&c| steps >= c).count() + single
+    fn get(&self, steps: usize) -> Vec<i32> {
+        let mut single = self
+            .single_counts
+            .get(&steps)
+            .map(|x| x.clone())
+            .unwrap_or_else(|| Vec::new());
+        single.extend(
+            self.geq
+                .iter()
+                .filter_map(|&c| if steps >= c.0 { Some(c.1) } else { None }),
+        );
+        single
     }
 }
 
 pub fn solve(input: &str) -> Solution<u32, u32> {
     // Idea: x and y are independent, so let us first find all the legal step
     // counts that we can have that get us to the proper x-range
-    // target area: x=20..30, y=-10..-5
-    // let target = Target::new(139, 187, -148, -89);
-    let target = Target::new(20, 30, -10, -5);
+    let split: Vec<i32> = input
+        .split(|c| match c {
+            '=' | '.' | ',' | '\n' => true,
+            _ => false,
+        })
+        .filter_map(|x| x.parse().ok())
+        .collect();
+    let target = Target::new(split[0], split[1], split[2], split[3]);
+    // let target = Target::new(20, 30, -10, -5);
     let mut steps = Vec::new();
     let mut geq = Vec::new();
     for x_velocity in (0..200).rev() {
-        // println!("{}", x_velocity);
         match target.check_x_path(x_velocity) {
             StepsX::Never => {}
             StepsX::Range(a, b) => {
-                if a != b {
-                    println!("a: {}, b: {}", a, b);
-                }
                 for x in a..=b {
-                    steps.push(x);
+                    steps.push((x, x_velocity));
                 }
             }
             StepsX::GreaterEq(x) => {
-                println!("With x_velocity: {} Steps >= {}", x_velocity, x);
-                geq.push(x);
+                geq.push((x, x_velocity));
             }
         }
     }
-    // let mut steps: Vec<_> = steps.into_iter().collect();
-    steps.sort();
-    let mut map = HashMap::new();
-    for s in steps.clone() {
-        *map.entry(s).or_default() += 1;
+    let mut map: HashMap<usize, Vec<i32>> = HashMap::new();
+    for (s, x) in steps.clone() {
+        let entry = map.entry(s).or_default();
+        entry.push(x);
     }
+    let beyond = geq[0].0;
     let steps_map = StepsMap::new(map, geq);
-    for s in steps {
-        println!("Steps: {}", s);
-    }
-    println!("{}", steps_map.get(17));
+
+    // Check that every positive number of steps has an initial x velocity ending in the grid
+    debug_assert!((1..beyond).all(|x| steps_map.single_counts.get(&x).is_some()));
+
     let mut count = 0;
-    // Idk why 10_000 is sufficient to be honest
-    for y_velocity in -150..10000 {
+    let mut y_max = 0;
+    // The velocity at the origin should be -1 * initial_velocity
+    for y_velocity in -150..150 {
         if let Some(legal) = target.check_y_path(y_velocity).valid() {
-            let old = count;
-            if legal.min != legal.max {
-                println!("LEGAL: {} {}", legal.min, legal.max);
+            y_max = std::cmp::max(legal.height, y_max);
+            if legal.min == legal.max {
+                let set = steps_map.get(legal.min);
+                count += set.len();
+            } else {
+                let mut set = HashSet::new();
+                for steps in legal.min..=legal.max {
+                    set.extend(steps_map.get(steps).into_iter());
+                }
+                count += set.len();
             }
-            for steps in legal.min..=legal.max {
-                count += steps_map.get(steps);
-            }
-            // count += 1;
-            println!("y: {}, x_count?: {}", y_velocity, count - old);
-            // dbg!(max_value);
         }
     }
-    println!("{}", count);
-    Solution::new(0, 0)
+    Solution::new(y_max as u32, count as u32)
 }
