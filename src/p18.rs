@@ -8,19 +8,7 @@ enum Number {
     Empty,
 }
 
-// struct LeftIterator<'a> {
-//     tree: &'a Tree,
-//     idx: usize,
-// }
-
-// impl<'a> Iterator for LeftIterator<'a> {
-//     type Item = usize;
-
-//     fn next(&mut self) -> Option<Self::Item> {
-
-//     }
-// }
-
+#[derive(Clone)]
 struct Tree {
     data: Vec<Number>,
 }
@@ -39,13 +27,25 @@ impl Tree {
             .find(|(_idx, node)| **node != Number::Empty)
             .map(|(a, _b)| a)
     }
+    fn magnitude(&self) -> u32 {
+        self.magnitude_inner(1)
+    }
+    fn magnitude_inner(&self, idx: usize) -> u32 {
+        match self.data[idx] {
+            Number::Pair => {
+                let left = Self::left_child(idx);
+                let right = Self::right_child(idx);
+                3 * self.magnitude_inner(left) + 2 * self.magnitude_inner(right)
+            }
+            Number::Value(x) => x,
+            Number::Empty => unimplemented!(),
+        }
+    }
     fn reduce(&mut self) {
         while !self.reduce_inner() {}
     }
     fn reduce_inner(&mut self) -> bool {
-        println!("{}", self);
         let order = self.left_vec();
-        // [[[[0,7],4],[7,[[8,4],9]]],[1,1]]
         for (order_idx, tree_idx) in order.iter().copied().enumerate() {
             let depth = Self::depth(tree_idx);
             if depth >= 4 && self.data[tree_idx] == Number::Pair {
@@ -53,7 +53,7 @@ impl Tree {
                 return false;
             }
         }
-        for tree_idx in order.iter().copied() {
+        for tree_idx in order.into_iter() {
             if let Number::Value(x) = self.data[tree_idx] {
                 if x >= 10 {
                     self.split(tree_idx);
@@ -64,8 +64,6 @@ impl Tree {
         true
     }
     fn split(&mut self, idx: usize) {
-        // Todo fix split
-        dbg!("Split");
         let left = Self::left_child(idx);
         let right = Self::right_child(idx);
         debug_assert!(self.data[left] == Number::Empty);
@@ -76,12 +74,12 @@ impl Tree {
                 let right_val = if x % 2 == 0 { x / 2 } else { x / 2 + 1 };
                 self.data[left] = Number::Value(left_val);
                 self.data[right] = Number::Value(right_val);
+                self.data[idx] = Number::Pair;
             }
             _ => unimplemented!(),
         }
     }
     fn explode(&mut self, order_idx: usize, order: &[usize]) {
-        dbg!("Explode");
         let start = order[order_idx];
         let left_idx = Self::left_child(start);
         let right_idx = Self::right_child(start);
@@ -151,7 +149,9 @@ impl Add for Tree {
     type Output = Self;
 
     fn add(self, rhs: Self) -> Self::Output {
-        debug_assert!(self.max_used_index().unwrap() <= 31 && self.max_used_index().unwrap() <= 31);
+        debug_assert!(
+            self.max_used_index().unwrap_or(0) <= 31 && self.max_used_index().unwrap_or(0) <= 31
+        );
         let mut data = vec![Number::Empty, Number::Pair];
         let mut left = self.data.into_iter().skip(1);
         let mut right = rhs.data.into_iter().skip(1);
@@ -220,20 +220,24 @@ fn parse_line(line: &str) -> Tree {
 
 pub fn solve(input: &str) -> Solution<u32, u32> {
     let trees: Vec<_> = input.lines().map(|line| parse_line(line)).collect();
-    for (tree, line) in trees.iter().zip(input.lines()) {
-        // Test my parsing works
-        assert_eq!(&format!("{}", tree), line);
+
+    let mut max_magnitude = 0;
+    for i in 0..trees.len() {
+        for j in 0..trees.len() {
+            if i != j {
+                let sum = (trees[i].clone() + trees[j].clone()).magnitude();
+                if sum > max_magnitude {
+                    max_magnitude = sum;
+                }
+            }
+        }
     }
 
-    let deepest_node = trees.iter().map(|t| t.max_used_index()).max();
-    dbg!(deepest_node);
-
-    let t1 = parse_line("[[[[4,3],4],4],[7,[[8,4],9]]]");
-    let t2 = parse_line("[1,1]");
-    let t3 = t1 + t2;
-    println!("Finished: {}", t3);
-    // let s = "[[1,9],[8,5]]";
-    // let tree = parse_line(s);
-    // println!("{}", tree);
-    Solution::new(0, 0)
+    let start = trees[0].clone();
+    let part1 = trees
+        .into_iter()
+        .skip(1)
+        .fold(start, |acc, tree| acc + tree)
+        .magnitude();
+    Solution::new(part1, max_magnitude)
 }
